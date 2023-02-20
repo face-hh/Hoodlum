@@ -1,0 +1,26 @@
+{
+  "name": "hoodlum",
+  "version": "1.0.0",
+  "description": "Mafia inside Discord, amogus if you will.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/face-hh/Hoodlum.git"
+  },
+  "keywords": [],
+  "author": "FaceDevStuff",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/face-hh/Hoodlum/issues"
+  },
+  "homepage": "https://github.com/face-hh/Hoodlum#readme",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "glob": "^7.2.0",
+    "oceanic-collectors": "^1.0.7",
+    "oceanic.js": "^1.5.0"
+  }
+}
