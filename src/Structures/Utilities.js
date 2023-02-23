@@ -56,7 +56,7 @@ module.exports = class Utilities {
 		}
 	}
 	async loadEvents() {
-		const events = await glob(`${this.directory}Events\\*.js`);
+		const events = await glob(`${this.directory}Events/*.js`);
 
 		for (const eventFile of events) {
 			delete require.cache[eventFile];
