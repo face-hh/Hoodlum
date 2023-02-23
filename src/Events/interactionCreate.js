@@ -31,7 +31,6 @@ module.exports = class extends Event {
 				// await timestamps.set(interaction.member.user.id, Date.now());
 				// setTimeout(async () => await timestamps.delete(interaction.member.user.id), command.cooldown);
 
-				if(!interaction.acknowledged) await interaction.defer().catch(() => {});
 				if(!interaction.options) return await command.run(interaction, this.client);
 
 				await command.run(
@@ -40,7 +39,7 @@ module.exports = class extends Event {
 				);
 			}
 			catch (err) {
-				this.client.createMessage(interaction.channel.id, { content: 'Something went wrong!' });
+				interaction.channel.createMessage({ content: 'Something went wrong!' });
 
 				this.client.devMode === true ? console.error(err) : console.log(`Error caught: ${err}`);
 			}

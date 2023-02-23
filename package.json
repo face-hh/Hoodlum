@@ -21,6 +21,6 @@
     "dotenv": "^16.0.3",
     "glob": "^7.2.0",
     "oceanic-collectors": "^1.0.7",
-    "oceanic.js": "^1.5.0"
+    "oceanic.js": "^1.5.1-dev.e07b8d4"
   }
 }

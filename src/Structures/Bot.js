@@ -5,7 +5,7 @@ module.exports = class BotClient extends Client {
 	constructor(options = {}) {
 		const devMode = true;
 
-		super({ auth: devMode ? process.env.devToken : process.env.token });
+		super({ auth: devMode ? process.env.devToken : process.env.token, gateway: { intents: ['MESSAGE_CONTENT', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILDS'] } });
 
 		this.validate(options);
 
@@ -13,6 +13,7 @@ module.exports = class BotClient extends Client {
 
 		this.interactions = new Map();
 		this.events = new Map();
+		this.data = [];
 
 		this.devMode = devMode;
 	}
