@@ -635,7 +635,7 @@ module.exports = class Utilities {
 			) => {
 				let plot;
 
-				const Buffoon = data.players.find((el) => el.role.name === 'Buffoon')?.id;
+				const Buffoon = data.players.find((el) => el?.role?.name === 'Buffoon')?.id;
 
 				if(mostVoted[1] === mostVoted2[1] || mostVoted[1] === 0) {
 					plot = 'There was a tie!';
