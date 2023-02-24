@@ -494,11 +494,11 @@ module.exports = class Utilities {
 						return;
 					}
 
-					// if(!data.deadPlayers.includes(player.id)) {
-					// 	await btn.defer(64);
-					// 	await btn.createFollowup({ content: 'oh ma god BRO YOU CANT HEAL THE ALIVE jesus' });
-					// 	return;
-					// }
+					if(!data.deadPlayers.includes(player.id)) {
+						await btn.defer(64);
+					 	await btn.createFollowup({ content: 'oh ma god BRO YOU CANT HEAL THE ALIVE jesus' });
+					 	return;
+					 }
 
 					if(userData.alreadyRevived) return await btn.createFollowup({ content: 'You already revived someone brah 💀' });
 
