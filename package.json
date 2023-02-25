@@ -1,6 +1,6 @@
 {
   "name": "hoodlum",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mafia inside Discord, amogus if you will.",
   "main": "src/index.js",
   "scripts": {
@@ -20,6 +20,8 @@
   "dependencies": {
     "dotenv": "^16.0.3",
     "glob": "^7.2.0",
+    "mongodb": "^5.1.0",
+    "ms": "^2.1.3",
     "oceanic-collectors": "^1.0.7",
     "oceanic.js": "^1.5.1-dev.e07b8d4"
   }

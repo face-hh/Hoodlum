@@ -2,9 +2,8 @@ const path = require('path');
 const Oceanic = require('oceanic.js');
 const { promisify } = require('util');
 const glob = promisify(require('glob'));
+const ms = require('ms');
 const { InteractionCollector, MessageCollector } = require('oceanic-collectors');
-const dayInterval = 60000;
-const voteInterval = 30000;
 const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 const roles = [
@@ -69,6 +68,9 @@ module.exports = class Utilities {
 		}
 	}
 
+	randomHex() {
+		return Number('0x' + Math.floor(Math.random() * 16777215).toString(16));
+	}
 	generateRandomID() {
 		let id = '#';
 		for (let i = 0; i < 6; i++) {
@@ -139,7 +141,7 @@ module.exports = class Utilities {
 		const permissions = [
 			{
 				allow: Oceanic.Permissions.VIEW_CHANNEL,
-				deny: Oceanic.Permissions.SEND_MESSAGES | Oceanic.Permissions.ATTACH_FILES | Oceanic.Permissions.EMBED_LINKS,
+				deny: Oceanic.Permissions.SEND_MESSAGES | Oceanic.Permissions.ATTACH_FILES | Oceanic.Permissions.EMBED_LINKS | Oceanic.Permissions.ADD_REACTIONS,
 				id: interaction.guildID,
 				type: Oceanic.OverwriteTypes.ROLE,
 			},
@@ -205,6 +207,9 @@ module.exports = class Utilities {
 			{
 				type: 1, components: [],
 			},
+			{
+				type: 1, components: [],
+			},
 		];
 		let actionRow = 0;
 
@@ -242,7 +247,7 @@ module.exports = class Utilities {
 
 	async createVoteSystem({ data, buttonIDs, skipID, Mafia = false, votes, votesCounter, messageCollector = false }, callback) {
 		voteSystemCollector = new InteractionCollector(this.client, {
-			time: voteInterval,
+			time: data.voteInterval,
 		});
 		const alreadyVoted = [];
 
@@ -369,6 +374,11 @@ module.exports = class Utilities {
 		data.players = actualRoles;
 
 		data.players.forEach(async (player) => {
+			const userdata = await this.client.userDatabase.db_fetch({ id: interaction.user.id });
+
+			userdata.games++;
+
+			this.client.userDatabase.db_update({ id: player.id, data: userdata });
 			try {
 				const dmChannel = await this.client.users.get(player.id).createDM();
 
@@ -418,8 +428,9 @@ module.exports = class Utilities {
 						await btn.createFollowup({ content: 'BRO MENTION SOMEONE THAT IS IN THE MATCH JESUS CHRIST 😭😭😭' });
 						return;
 					}
+					const target = data.players.find((el) => el.id === player.id);
 
-					data.deadPlayers.push(data.players.find((el) => el.id === player.id));
+					data.deadPlayers.push(target);
 
 					data.players.splice(data.players.findIndex((el) => el.id === player.id), 1);
 
@@ -427,6 +438,9 @@ module.exports = class Utilities {
 
 					await channel.edit({ permissionOverwrites: this.initiatePermissions(interaction, 'global', data) });
 					const dmChannel = await this.client.users.get(player.id).createDM();
+					const Buffoon = data.players.find((el) => el?.role?.name === 'Buffoon')?.id;
+
+					await this.checkForEndGame(interaction, channel, data, target.id, Buffoon);
 
 					// eslint-disable-next-line no-empty-function
 					dmChannel.createMessage({ content:'The 🪓 Executioner killed you, wait till the game ends to see the channel! Game ' + data.lobbyID }).catch(() => {});
@@ -496,9 +510,9 @@ module.exports = class Utilities {
 
 					if(!data.deadPlayers.includes(player.id)) {
 						await btn.defer(64);
-					 	await btn.createFollowup({ content: 'oh ma god BRO YOU CANT HEAL THE ALIVE jesus' });
-					 	return;
-					 }
+						await btn.createFollowup({ content: 'oh ma god BRO YOU CANT HEAL THE ALIVE jesus' });
+						return;
+					}
 
 					if(userData.alreadyRevived) return await btn.createFollowup({ content: 'You already revived someone brah 💀' });
 
@@ -581,41 +595,112 @@ module.exports = class Utilities {
 		this.runDay(interaction, channel, data);
 	}
 
-	async endGame(interaction, channel, data) {
+	async checkForEndGame(interaction, channel, data, target, Buffoon) {
+		const TownTeam = data.players.filter((el) => el.role.team !== 'Mafia').length;
+		const MafiaTeam = data.players.filter((el) => el.role.team === 'Mafia').length;
+
 		const client = this.client;
+		const ids = this.mapIDs(data.originalRoles);
+		const footer = { text: `The channel will delete in ${ms(data.channelDeletionTimeout)}.` };
 
 		let rolesDesc = '';
 
-		console.log(data.originalRoles);
-		for(let i = 0; i < data.originalRoles.length; i++) {
-			const player = data.originalRoles[i];
+		await new Promise((resolve) => {
+			if(Buffoon === target) {
+				data.gameEnded = 'none';
 
-			rolesDesc += `${player.role.icon} \`${player.role.name}\` - <@${player.id}>\n`;
+				channel.createMessage({
+					content: ids,
+					embeds: [
+						{
+							title: 'Everyone lost.',
+							description: `😂 Haha! 🤪 You got trolled and 🗡️ you tried to kill me, but 🤡 jokes on you! - <@${Buffoon}>`,
+							footer: footer,
+							color: 0x00ff00,
+						},
+					],
+				});
+				resolve();
+			}
+			else
+			if(MafiaTeam === 0) {
+				data.gameEnded = 'town';
+
+				channel.createMessage({
+					content: ids,
+					embeds: [
+						{
+							title: 'The **mafia** lost.',
+							description: '🎉 Town won.',
+							footer: footer,
+							color: 0x00ff00,
+						},
+					],
+				});
+				resolve();
+			}
+			else
+			if(MafiaTeam >= TownTeam) {
+				data.gameEnded = 'mafia';
+
+				channel.createMessage({
+					content: ids,
+					embeds: [
+						{
+							title: 'Unfortunately, the **town** lost.',
+							description: '🤵 Mafia won.',
+							footer: footer,
+							color: 0xff0000,
+						},
+					],
+				});
+				resolve();
+			}
+
+			resolve();
+		});
+
+		if(data.gameEnded) {
+			for(let i = 0; i < data.originalRoles.length; i++) {
+				const player = data.originalRoles[i];
+
+				if(data.gameEnded === player.role.team.toLowerCase()) {
+					const userdata = await this.client.userDatabase.db_fetch({ id: player.id });
+
+					userdata[`${data.gameEnded}_wins`]++;
+
+					this.client.userDatabase.db_update({ id: player.id, data: userdata });
+				}
+				rolesDesc += `${player.role.icon} \`${player.role.name}\` - <@${player.id}>\n`;
+			}
+			await channel.edit({ permissionOverwrites: this.initiatePermissions(interaction, 'everyone', data) });
+
+			channel.createMessage({ embeds: [
+				{
+					title: 'Roles',
+					description: rolesDesc,
+				},
+			],
+			});
+
+			return setTimeout(async () => {
+				// eslint-disable-next-line no-empty-function
+				await channel.delete().catch(() => {});
+				delete client.data[interaction.guildID];
+				console.log({ content: 'Cleared data', data: client.data });
+			}, data.channelDeletionTimeout);
 		}
-		await channel.edit({ permissionOverwrites: this.initiatePermissions(interaction, 'everyone', data) });
-
-		channel.createMessage({ embeds: [
-			{
-				title: 'Roles',
-				description: rolesDesc,
-			},
-		] });
-		setTimeout(async () => {
-			await channel.delete();
-			delete client.data[interaction.guildID];
-			console.log({ content: 'Cleared data', data: client.data });
-		}, 30000);
 	}
 	async runDay(interaction, channel, data) {
-		const time = Math.round((Date.now() + dayInterval) / 1000);
-		channel.createMessage({ content: `Everyone is now able to chat. Discuss any topic you want, you have <t:${time}:R>.` });
+		const time = Math.round((Date.now() + data.dayInterval) / 1000);
+		channel.createMessage({ content: `Everyone is now able to chat. Discuss any topic you want, voting starts <t:${time}:R>.` });
 
 		setTimeout(async () => {
 			const { componentsArray, votes, buttonIDs, skipID } = await this.generateVoteField(data.players);
 
 			const votesCounter = 0;
 
-			const voteTime = Math.round((Date.now() + voteInterval) / 1000);
+			const voteTime = Math.round((Date.now() + data.voteInterval) / 1000);
 
 			channel.createMessage({
 				content: `Voting ends in: <t:${voteTime}:R>`,
@@ -650,42 +735,9 @@ module.exports = class Utilities {
 					plot = `Everyone decided to kill <@${mostVoted[0]}>.`;
 				}
 
-				const MafiaTeam = data.players.filter((el) => el.role.team === 'Mafia').length;
+				await this.checkForEndGame(interaction, channel, data, mostVoted[0], Buffoon);
 
-				if(Buffoon === mostVoted[0]) {
-					await channel.createMessage({
-						content: this.mapIDs(data.players),
-						embeds: [
-							{
-								title: 'Everyone lost.',
-								description: `😂 Haha! 🤪 You got trolled and 🗡️ you tried to kill me, but 🤡 jokes on you! - <@${Buffoon}>`,
-								footer: { text: 'The channel will delete in 30 seconds.' },
-								color: 0x00ff00,
-							},
-						],
-					});
-
-					await this.endGame(interaction, channel, data);
-
-					return;
-				}
-				if(MafiaTeam === 0) {
-					await channel.createMessage({
-						content: this.mapIDs(data.players),
-						embeds: [
-							{
-								title: 'The **mafia** lost.',
-								description: '🎉 Town won.',
-								footer: { text: 'The channel will delete in 30 seconds.' },
-								color: 0x00ff00,
-							},
-						],
-					});
-
-					await this.endGame(interaction, channel, data);
-
-					return;
-				}
+				if(data.gameEnded) return;
 
 				await channel.createMessage({
 					content: this.mapIDs(data.players),
@@ -699,7 +751,7 @@ module.exports = class Utilities {
 				});
 				this.runNight(interaction, channel, data);
 			});
-		}, dayInterval);
+		}, data.dayInterval);
 	}
 
 	async runNight(interaction, channel, data) {
@@ -753,25 +805,11 @@ module.exports = class Utilities {
 				}
 
 				const playerRole = data.originalRoles.find((el) => el.id === mostVoted[0]);
-				const TownTeam = data.players.filter((el) => el.role.team !== 'Mafia').length;
 				const MafiaTeam = data.players.filter((el) => el.role.team === 'Mafia');
 
-				if(MafiaTeam.length >= TownTeam) {
-					await channel.createMessage({
-						content: this.mapIDs(data.players),
-						embeds: [
-							{
-								title: 'Unfortunately, the **town** lost.',
-								description: '🤵 Mafia won.',
-								footer: { text: 'The channel will delete in 30 seconds.' },
-								color: 0xff0000,
-							},
-						],
-					});
+				await this.checkForEndGame(interaction, channel, data, mostVoted[0]);
 
-					await this.endGame(interaction, channel, data);
-					return;
-				}
+				if(data.gameEnded) return;
 
 				await channel.createMessage({ content: 'History erased.' });
 				await channel.purge({

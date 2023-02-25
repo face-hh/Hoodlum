@@ -1,4 +1,5 @@
 const Oceanic = require('oceanic.js');
+const ms = require('ms');
 const { InteractionCollector } = require('oceanic-collectors');
 const InteractionBase = require('../Structures/CommandBase');
 
@@ -28,10 +29,16 @@ module.exports = class Interaction extends InteractionBase {
 		data.lobbyID = lobbyID;
 
 		const description = '⭐ A new **Mafia** game as been initiated!\n🔎 Rules: Teams **win** when opposing players die.\n‼ Almost everyone has a special **power**\n👥 Players: {p}';
+		const db = await this.client.database.db_fetch({ id: interaction.guildID });
+
+		data.dayInterval = db.day_interval;
+		data.voteInterval = db.vote_interval;
+		data.channelDeletionTimeout = db.channel_deletion_timeout;
 
 		function merge(desc) {
 			return desc.replace(/{p}/g, `${data.originalPlayers.map((x) => `<@${x}>`).join(', ')} (**${data.originalPlayers.length}**)`);
 		}
+
 		function stopLobby(collector, client) {
 			collector.stop('user');
 			interaction.editOriginal({
@@ -69,13 +76,15 @@ module.exports = class Interaction extends InteractionBase {
 		});
 
 		const collector = new InteractionCollector(this.client, {
-			time: 60000,
+			time: db.lobby_timeout,
 		});
 
 		collector.on('end', (_, reason) => {
 			if(reason === 'time') {
 				delete this.client.data[interaction.guildID];
-				interaction.channel.createMessage({ content: 'A game was initiated **60s**, due to lack of players/owner activity, it was cancelled. You are now able to use the command again.' });
+
+				// eslint-disable-next-line no-empty-function
+				interaction.channel.createMessage({ content: `A game was initiated **${ms(db.lobby_timeout)}** ago, due to lack of players/owner activity, it was cancelled. You are now able to use the command again.` }).catch(() => {});
 			}
 		});
 		collector.on('collect', async (btn) => {
@@ -107,7 +116,7 @@ module.exports = class Interaction extends InteractionBase {
 
 			data.originalPlayers.push(btn.user.id);
 
-			if(data.originalPlayers.length === 20) {
+			if(data.originalPlayers.length === db.max_players) {
 				return stopLobby(collector, this.client);
 			}
 			embed.description = merge(description);
