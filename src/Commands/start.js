@@ -90,9 +90,10 @@ module.exports = class Interaction extends InteractionBase {
 		});
 		collector.on('collect', async (btn) => {
 			if(!(btn instanceof Oceanic.ComponentInteraction)) return;
-			await btn.defer(64);
 
 			if(btn.data.customID === startID) {
+				await btn.defer(64);
+
 				if(btn.user.id !== interaction.user.id) return btn.createFollowup({ content: 'Sorry, only the creator can start the game! Please wait until it reaches 10 players, or until the creator starts it!' });
 				if(data.originalPlayers.length < 4) return btn.createFollowup({ content: 'Sorry, you need AT LEAST **4** players to start.' });
 
@@ -101,6 +102,8 @@ module.exports = class Interaction extends InteractionBase {
 			}
 
 			if(btn.data.customID === leaveID) {
+				await btn.defer(64);
+
 				if(!data.originalPlayers.includes(btn.user.id)) return btn.createFollowup({ content: 'You haven\'t joined yet.' });
 				if(btn.user.id === interaction.user.id) return btn.createFollowup({ content: 'The leader can\'t leave.' });
 
@@ -112,6 +115,8 @@ module.exports = class Interaction extends InteractionBase {
 			}
 
 			if(btn.data.customID !== lobbyBtnID) return;
+
+			await btn.defer(64);
 
 			if(data.originalPlayers.includes(btn.user.id)) return btn.createFollowup({ content: 'You already joined...' });
 
