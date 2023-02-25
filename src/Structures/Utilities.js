@@ -149,7 +149,7 @@ module.exports = class Utilities {
 				type: Oceanic.OverwriteTypes.ROLE,
 			},
 			{
-				allow: guildPerms | Oceanic.Permissions.VIEW_CHANNEL | Oceanic.Permissions.MANAGE_CHANNELS,
+				allow: guildPerms | Oceanic.Permissions.VIEW_CHANNEL | Oceanic.Permissions.MANAGE_CHANNELS | Oceanic.Permissions.MANAGE_ROLES,
 				deny: 0n,
 				id: this.client.user.id,
 				type: Oceanic.OverwriteTypes.MEMBER,
