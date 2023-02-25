@@ -139,12 +139,20 @@ module.exports = class Utilities {
 	}
 
 	initiatePermissions(interaction, type, data) {
+		const guildPerms = Oceanic.Permissions.SEND_MESSAGES | Oceanic.Permissions.ATTACH_FILES | Oceanic.Permissions.EMBED_LINKS | Oceanic.Permissions.ADD_REACTIONS;
+
 		const permissions = [
 			{
 				allow: Oceanic.Permissions.VIEW_CHANNEL,
-				deny: Oceanic.Permissions.SEND_MESSAGES | Oceanic.Permissions.ATTACH_FILES | Oceanic.Permissions.EMBED_LINKS | Oceanic.Permissions.ADD_REACTIONS,
+				deny: guildPerms,
 				id: interaction.guildID,
 				type: Oceanic.OverwriteTypes.ROLE,
+			},
+			{
+				allow: guildPerms | Oceanic.Permissions.VIEW_CHANNEL,
+				deny: 0n,
+				id: this.client.user.id,
+				type: Oceanic.OverwriteTypes.MEMBER,
 			},
 		];
 
