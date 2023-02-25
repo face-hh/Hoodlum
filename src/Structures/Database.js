@@ -5,10 +5,8 @@ let client;
 module.exports = class State {
 	constructor(bot, { collection }) {
 		if (!client) {
-			client = new MongoClient(process.env.mongo_uri, { useNewUrlParser: true });
-			client.connect((err) => {
-				if (!err) console.log('Connected to MongoDB!');
-			});
+			client = new MongoClient(process.env.mongo_uri);
+			client.connect();
 		}
 
 		this.bot = bot;
@@ -41,12 +39,12 @@ module.exports = class State {
      */
 	async db_fetch(query) {
 		let data = await this.collection.findOne(query);
+		const defaultData = Object.assign({}, this.defaultData);
 
 		if (!data) {
-			this.defaultData.id = query.id;
-			await this.collection.insertOne(this.defaultData);
-			delete this.defaultData.id;
 
+			defaultData.id = query.id;
+			await this.collection.insertOne(defaultData);
 			data = await this.collection.findOne({ id: query.id });
 			return data;
 		}
