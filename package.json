@@ -23,6 +23,7 @@
     "mongodb": "^5.1.0",
     "ms": "^2.1.3",
     "oceanic-collectors": "^1.0.7",
-    "oceanic.js": "^1.5.1-dev.e07b8d4"
+    "oceanic.js": "^1.5.1-dev.e07b8d4",
+    "sourcebin": "^5.0.0"
   }
 }

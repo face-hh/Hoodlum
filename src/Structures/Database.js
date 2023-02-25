@@ -23,13 +23,17 @@ module.exports = class State {
      * @param {Object} id The distinguishable ID of a certain data piece.
      */
 	async db_update({ data, id }) {
-		for (const key in this.defaultData) {
+		delete data._id;
+
+		const defaultData = Object.assign({}, this.defaultData);
+
+		for (const key in defaultData) {
 			if (key in data) {
-				delete this.defaultData[key];
+				delete defaultData[key];
 			}
 		}
 
-		this.collection.updateOne({ id }, { $set: data, $setOnInsert: this.defaultData }, { upsert: true });
+		this.collection.updateOne({ id }, { $set: data, $setOnInsert: defaultData }, { upsert: true });
 
 		return true;
 	}

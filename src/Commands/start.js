@@ -34,6 +34,7 @@ module.exports = class Interaction extends InteractionBase {
 		data.dayInterval = db.day_interval;
 		data.voteInterval = db.vote_interval;
 		data.channelDeletionTimeout = db.channel_deletion_timeout;
+		if(data.category !== null) data.category = db.category;
 
 		function merge(desc) {
 			return desc.replace(/{p}/g, `${data.originalPlayers.map((x) => `<@${x}>`).join(', ')} (**${data.originalPlayers.length}**)`);

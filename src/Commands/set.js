@@ -18,6 +18,7 @@ module.exports = class Interaction extends InteractionBase {
 							name: 'category',
 							description: 'The category to set.',
 							type: Oceanic.ApplicationCommandOptionTypes.CHANNEL,
+							channelTypes: [Oceanic.ChannelTypes.GUILD_CATEGORY],
 							required: true,
 						},
 					],

@@ -3,6 +3,7 @@ const Oceanic = require('oceanic.js');
 const { promisify } = require('util');
 const glob = promisify(require('glob'));
 const ms = require('ms');
+const { create } = require('sourcebin');
 const { InteractionCollector, MessageCollector } = require('oceanic-collectors');
 const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
@@ -342,13 +343,33 @@ module.exports = class Utilities {
 	async initiateGame(interaction, data) {
 		const showRoleID = String(Math.random());
 		const permissions = this.initiatePermissions(interaction, 'everyone', data);
-
-		const channel = await interaction.guild.createChannel(Oceanic.ChannelTypes.GUILD_TEXT, {
+		const channelObject = {
 			name: `Game ${data.lobbyID}`,
 			permissionOverwrites: permissions,
-		});
+		};
+
+		const category = interaction.guild.channels.get(data.category);
+		if(category) channelObject.parentID = category.id;
+
+		const channel = await interaction.guild.createChannel(Oceanic.ChannelTypes.GUILD_TEXT, channelObject);
 		const mappedIDs = this.mapIDs(data);
 		const fields = roles.map(el => el = { name: `${el.icon} ${el.name}`, value: el.description, inline: true });
+
+		data.transcript = [];
+
+		const transcript = new MessageCollector(this.client, channel, {
+			filter: (m) => m.author.id !== this.client.user.id && m.content !== '',
+		});
+
+		transcript.on('collect', (m) => {
+			const gameData = data.originalRoles.find((el) => el.id === m.author.id);
+
+			if(!gameData) return;
+
+			data.transcript.push({ role: gameData.role, author: m.author.tag, content: m.content });
+		});
+
+		data.transcriptCollector = transcript;
 
 		channel.createMessage({
 			content: mappedIDs,
@@ -374,7 +395,7 @@ module.exports = class Utilities {
 		data.players = actualRoles;
 
 		data.players.forEach(async (player) => {
-			const userdata = await this.client.userDatabase.db_fetch({ id: interaction.user.id });
+			const userdata = await this.client.userDatabase.db_fetch({ id: player.id });
 
 			userdata.games++;
 
@@ -675,10 +696,37 @@ module.exports = class Utilities {
 			}
 			await channel.edit({ permissionOverwrites: this.initiatePermissions(interaction, 'everyone', data) });
 
+			data.transcriptCollector.stop();
+
+			const mappedTranscript = data.transcript.map((el) => `${el.role.icon} ${el.role.name}  | ${el.author} - ${el.content}`).join('\n');
+
+			const transcript = await create(
+				{
+					title: `Game ${data.lobbyID}`,
+					description: 'The following is a transcript of the game.',
+					files: [
+						{
+							content: mappedTranscript,
+							language: 'text',
+						},
+					],
+				},
+			);
+
 			channel.createMessage({ embeds: [
 				{
 					title: 'Roles',
 					description: rolesDesc,
+				},
+			],
+			components: [
+				{
+					type: Oceanic.ComponentTypes.ACTION_ROW,
+					components: [
+						{
+							type: Oceanic.ComponentTypes.BUTTON, style: Oceanic.ButtonStyles.LINK, url: transcript.url, label: 'Transcript', emoji: { name: '🎫' },
+						},
+					],
 				},
 			],
 			});
@@ -696,6 +744,8 @@ module.exports = class Utilities {
 		channel.createMessage({ content: `Everyone is now able to chat. Discuss any topic you want, voting starts <t:${time}:R>.` });
 
 		setTimeout(async () => {
+			if(data.gameEnded) return;
+
 			const { componentsArray, votes, buttonIDs, skipID } = await this.generateVoteField(data.players);
 
 			const votesCounter = 0;
@@ -758,6 +808,8 @@ module.exports = class Utilities {
 		channel.createMessage({ content: 'The night comes in 10 seconds.' });
 
 		setTimeout(async () => {
+			if(data.gameEnded) return;
+
 			const noMafia = data.players.filter((member) => member.role.team !== 'Mafia');
 			const Mafia = data.players.filter((member) => member.role.team === 'Mafia');
 			const votesCounter = 0;

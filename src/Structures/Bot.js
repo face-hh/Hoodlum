@@ -5,7 +5,7 @@ const Database = require('./Database');
 
 module.exports = class BotClient extends Client {
 	constructor(options = {}) {
-		const devMode = false;
+		const devMode = true;
 
 		super({ auth: devMode ? process.env.devToken : process.env.token, gateway: { intents: ['MESSAGE_CONTENT', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILDS'] } });
 
