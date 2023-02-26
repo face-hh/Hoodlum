@@ -877,10 +877,10 @@ module.exports = class Utilities {
 					limit: data.toDelete.length,
 				});
 
-				const dmChannel = await this.client.users.get(mostVoted[0]).createDM();
+				const dmChannel = await this.client.users.get(mostVoted[0])?.createDM();
 
 				// eslint-disable-next-line no-empty-function
-				dmChannel.createMessage({ content:'The Mafia killed you, wait till the game ends to see the channel! Game ' + data.lobbyID }).catch(() => {});
+				dmChannel?.createMessage({ content:'The Mafia killed you, wait till the game ends to see the channel! Game ' + data.lobbyID }).catch(() => {});
 
 				channel.edit({ permissionOverwrites: this.initiatePermissions(interaction, 'global', data) });
 

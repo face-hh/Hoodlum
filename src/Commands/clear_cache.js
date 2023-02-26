@@ -12,6 +12,11 @@ module.exports = class Interaction extends InteractionBase {
 	 * @param {CommandInteraction} interaction The interaction.
 	 */
 	async run(interaction) {
+		if(!interaction.member.permissions.has('MANAGE_GUILD')) {
+			await interaction.defer(64);
+			return interaction.createFollowup({ content: 'Sorry, this command was locked behind the `MANAGE_GUILD` permission for security reasons.' });
+		}
+
 		await interaction.defer();
 
 		delete this.client.data[interaction.guildID];
