@@ -349,6 +349,7 @@ module.exports = class Utilities {
 	 * @param {Object} data The data.
 	 */
 	async initiateGame(interaction, data) {
+		const client = this.client;
 		const showRoleID = String(Math.random());
 		const permissions = this.initiatePermissions(interaction, 'everyone', data);
 		const channelObject = {
@@ -359,7 +360,15 @@ module.exports = class Utilities {
 		const category = interaction.guild.channels.get(data.category);
 		if(category) channelObject.parentID = category.id;
 
-		const channel = await interaction.guild.createChannel(Oceanic.ChannelTypes.GUILD_TEXT, channelObject);
+		let stop = false;
+		const channel = await interaction.guild.createChannel(Oceanic.ChannelTypes.GUILD_TEXT, channelObject).catch(async () => {
+			stop = true;
+			delete client.data[interaction.guildID];
+			return await interaction.channel.createMessage({ content: ':warning: Sir, I lack priviledges to create a channel, ask a higher up to give it to me!' });
+		});
+
+		if(stop === true) return;
+
 		const mappedIDs = this.mapIDs(data);
 		const fields = roles.map(el => el = { name: `${el.icon} ${el.name}`, value: el.description, inline: true });
 
@@ -743,7 +752,6 @@ module.exports = class Utilities {
 				// eslint-disable-next-line no-empty-function
 				await channel.delete().catch(() => {});
 				delete client.data[interaction.guildID];
-				console.log({ content: 'Cleared data', data: client.data });
 			}, data.channelDeletionTimeout);
 		}
 	}
